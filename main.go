@@ -32,3 +32,26 @@ if err := scanner.Err(); err != nil {
 }
 return bannerMap, nil
 }
+
+func ConvertStringToAscii(input string, bannerMap map[string][]string) string {
+	var result []string
+	height := len(bannerMap["A"])
+
+	for i := 0; i < height; i++ {
+		var line string
+		for _, char := range input {
+			strChar := string(char)
+			if ascii, exists := bannerMap[strChar]; exists {
+				line += ascii[i]
+			} else {
+				line += " "
+			}
+		}
+		result = append(result, line)
+	}
+	return strings.Join(result, "\n")
+}
+
+func main() {
+	
+}
