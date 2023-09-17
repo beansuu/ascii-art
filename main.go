@@ -1,57 +1,63 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 )
 
-func ReadBannerFile(filename string) (map[string][]string, error) {
-	file, err := os.Open(filename)
+const SymbolSize = 8
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ascii-art <text> [style_file]")
+		os.Exit(1)
+	}
+
+	style := "standard.txt"
+	if len(os.Args) > 2 {
+		style = os.Args[2]
+	}
+
+	symbolMap, err := makeSymbolMap(style)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	printArt(os.Args[1], symbolMap)
+}
+
+func makeSymbolMap(style string) (map[rune][]string, error) {
+	symbolMap := make(map[rune][]string)
+	file, err := ioutil.ReadFile(style)
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 
-bannerMap := make(map[string][]string)
-scanner := bufio.NewScanner(file)
-
-var currentChar string
-for scanner.Scan() {
-	line := scanner.Text()
-	if string.HasPrefix(line, "[") && strings.HasSuffix(line, "]") {
-		currentChar = line[1 : len(line)-1]
-		bannerMap[currentChar] = []string{}
-	} else if currentChar != "" {
-		bannerMap[currentChar] = append(bannerMap[currentChar], line)
-	}
-}
-if err := scanner.Err(); err != nil {
-	return nil, err
-}
-return bannerMap, nil
-}
-
-func ConvertStringToAscii(input string, bannerMap map[string][]string) string {
-	var result []string
-	height := len(bannerMap["A"])
-
-	for i := 0; i < height; i++ {
-		var line string
-		for _, char := range input {
-			strChar := string(char)
-			if ascii, exists := bannerMap[strChar]; exists {
-				line += ascii[i]
-			} else {
-				line += " "
-			}
+	artSymbols := strings.Split(string(file), "\n")
+	for symbol := ' '; symbol <= '~'; symbol++ {
+		j, slice := int(symbol-' '), make([]string, SymbolSize)
+		for i := range slice {
+			slice[i] = artSymbols[j*(SymbolSize+1)+i+1]
 		}
-		result = append(result, line)
+		symbolMap[symbol] = slice
 	}
-	return strings.Join(result, "\n")
+
+	return symbolMap, nil
 }
 
-func main() {
-	
+func printArt(input string, symbolMap map[rune][]string) {
+	for _, line := range strings.Split(input, "\\n") {
+		for i := 0; i < SymbolSize; i++ {
+			for _, symbol := range line {
+				fmt.Print(symbolMap[symbol][i])
+			}
+			fmt.Println()
+		}
+		if line == "" {
+			fmt.Println()
+		}
+	}
 }
